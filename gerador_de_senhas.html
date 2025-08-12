@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Gerador de Senhas — Simples e Seguro</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--accent:#06b6d4;--muted:#9aa4b2;--glass: rgba(255,255,255,0.04)}
+    *{box-sizing:border-box;font-family:Inter,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial}
+    body{margin:0;min-height:100vh;background:linear-gradient(180deg,#071021 0%, #07182a 100%);color:#e6eef6;display:flex;align-items:center;justify-content:center;padding:28px}
+    .card{width:100%;max-width:880px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:20px;box-shadow:0 8px 30px rgba(2,6,23,0.6);}
+    h1{margin:0 0 6px 0;font-size:20px}
+    p.lead{margin:0 0 18px 0;color:var(--muted);font-size:13px}
+
+    .row{display:flex;gap:16px}
+    .col{flex:1}
+    .controls{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+    label.option{display:flex;align-items:center;gap:10px;background:var(--glass);padding:10px;border-radius:8px;cursor:pointer}
+    input[type=checkbox]{width:18px;height:18px}
+
+    .range{display:flex;align-items:center;gap:12px}
+    .range input[type=range]{flex:1}
+    .output{display:flex;align-items:center;gap:8px;padding:12px;background:rgba(255,255,255,0.02);border-radius:8px}
+    .pwd{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono',monospace;font-size:16px;word-break:break-all}
+    button.btn{background:var(--accent);border:none;padding:10px 12px;border-radius:8px;color:#022;cursor:pointer;font-weight:600}
+    button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:8px 10px;border-radius:8px;color:var(--muted);cursor:pointer}
+    .meta{display:flex;gap:10px;align-items:center;color:var(--muted);font-size:13px}
+
+    .strength{height:10px;border-radius:999px;background:rgba(255,255,255,0.05);overflow:hidden}
+    .strength > i{display:block;height:100%;width:0%;background:linear-gradient(90deg,#ef4444,#f59e0b,#10b981);transition:width .25s ease}
+
+    ul.checklist{margin:10px 0 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+    li.check{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:rgba(255,255,255,0.02);border-radius:8px}
+
+    footer.small{margin-top:14px;color:var(--muted);font-size:12px}
+    @media (max-width:720px){.row{flex-direction:column}.controls{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <main class="card" role="main">
+    <h1>Gerador de Senhas</h1>
+    <p class="lead">Escolha os requisitos (maiúsculas, minúsculas, números, símbolos) e o tamanho mínimo. Clique em <strong>Gerar</strong>.</p>
+
+    <div class="row">
+      <div class="col">
+        <div class="controls" aria-hidden="false">
+          <label class="option"><input id="opt-upper" type="checkbox" checked> <span>Letra maiúscula (A-Z)</span></label>
+          <label class="option"><input id="opt-lower" type="checkbox" checked> <span>Letra minúscula (a-z)</span></label>
+          <label class="option"><input id="opt-numbers" type="checkbox" checked> <span>Números (0-9)</span></label>
+          <label class="option"><input id="opt-symbols" type="checkbox"> <span>Caracteres especiais (!@#...)</span></label>
+          <label class="option"><input id="opt-ambiguous" type="checkbox"> <span>Excluir caracteres ambíguos (O,0,l,1)</span></label>
+          <label class="option"><input id="opt-force" type="checkbox"> <span>Forçar inclusão de cada tipo selecionado</span></label>
+        </div>
+
+        <div style="margin-top:12px">
+          <label for="length">Tamanho da senha (mínimo 4) <span id="lenVal">12</span></label>
+          <div class="range" style="margin-top:6px">
+            <input id="length" type="range" min="4" max="64" value="12">
+            <button id="generate" class="btn">Gerar</button>
+            <button id="copyBtn" class="ghost">Copiar</button>
+          </div>
+        </div>
+
+        <div style="margin-top:12px" class="output" aria-live="polite">
+          <div class="pwd" id="password">••••••••••••</div>
+        </div>
+
+        <div style="margin-top:10px">
+          <div class="meta">
+            <div style="flex:1">
+              <div class="strength" aria-hidden="true"><i id="strengthBar"></i></div>
+            </div>
+            <div id="strengthLabel">Segura</div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px">
+          <ul class="checklist" id="checklist">
+            <li class="check"><span>Inclui maiúsculas?</span><strong id="chk-upper">—</strong></li>
+            <li class="check"><span>Inclui minúsculas?</span><strong id="chk-lower">—</strong></li>
+            <li class="check"><span>Inclui números?</span><strong id="chk-numbers">—</strong></li>
+            <li class="check"><span>Inclui símbolos?</span><strong id="chk-symbols">—</strong></li>
+            <li class="check"><span>Tamanho mínimo atendido?</span><strong id="chk-length">—</strong></li>
+          </ul>
+        </div>
+
+        <footer class="small">Dica: marque "Forçar inclusão" para garantir que todos os tipos selecionados estejam presentes na senha gerada.</footer>
+      </div>
+
+      <div class="col" style="max-width:320px">
+        <h3>Regras rápidas</h3>
+        <ol style="color:var(--muted);font-size:13px">
+          <li>Senhas mais longas são geralmente mais seguras.</li>
+          <li>Use uma mistura de tipos de caracteres para aumentar entropia.</li>
+          <li>Evite reutilizar senhas entre serviços.</li>
+          <li>Considere usar um gerenciador de senhas para armazená-las com segurança.</li>
+        </ol>
+
+        <h3 style="margin-top:14px">Opções avançadas</h3>
+        <p style="color:var(--muted);font-size:13px">Você pode excluir caracteres ambíguos (O,0,l,1) e forçar a presença de cada tipo marcado.</p>
+      </div>
+    </div>
+  </main>
+
+<script>
+  const UPPER = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const LOWER = 'abcdefghijklmnopqrstuvwxyz';
+  const NUMS = '0123456789';
+  const SYMS = '!@#$%^&*()-_=+[]{};:,.<>?/~`|\';
+  const AMBIG = /[O0l1I]/g;
+
+  const el = id => document.getElementById(id);
+  const lengthEl = el('length');
+  const lenVal = el('lenVal');
+  const pwdEl = el('password');
+  const generateBtn = el('generate');
+  const copyBtn = el('copyBtn');
+  const strengthBar = el('strengthBar');
+  const strengthLabel = el('strengthLabel');
+
+  const opts = {
+    upper: el('opt-upper'),
+    lower: el('opt-lower'),
+    numbers: el('opt-numbers'),
+    symbols: el('opt-symbols'),
+    ambiguous: el('opt-ambiguous'),
+    force: el('opt-force')
+  };
+
+  function updateLen(){ lenVal.textContent = lengthEl.value }
+  lengthEl.addEventListener('input', updateLen);
+  updateLen();
+
+  function buildPool(){
+    let pool = '';
+    if(opts.upper.checked) pool += UPPER;
+    if(opts.lower.checked) pool += LOWER;
+    if(opts.numbers.checked) pool += NUMS;
+    if(opts.symbols.checked) pool += SYMS;
+    if(opts.ambiguous.checked) pool = pool.replace(AMBIG, '');
+    return pool;
+  }
+
+  function secureRandomInt(max){
+    const arr = new Uint32Array(1);
+    window.crypto.getRandomValues(arr);
+    return arr[0] % max;
+  }
+
+  function pickRandom(str){ return str.charAt(secureRandomInt(str.length)); }
+
+  function ensureIncludes(passwordArray, types){
+    let i = 0;
+    types.forEach(t => {
+      if(t.enabled){
+        passwordArray[i++] = pickRandom(t.set);
+      }
+    });
+    for(let j=passwordArray.length-1;j>0;j--){
+      const k = secureRandomInt(j+1);
+      [passwordArray[j], passwordArray[k]] = [passwordArray[k], passwordArray[j]];
+    }
+    return passwordArray.join('');
+  }
+
+  function evaluateStrength(pwd){
+    let score = 0;
+    if(/[A-Z]/.test(pwd)) score++;
+    if(/[a-z]/.test(pwd)) score++;
+    if(/[0-9]/.test(pwd)) score++;
+    if(/[^A-Za-z0-9]/.test(pwd)) score++;
+    if(pwd.length >= 12) score += 2;
+    else if(pwd.length >= 8) score += 1;
+    const max = 6; const pct = Math.min(100, Math.round((score / max)*100));
+    strengthBar.style.width = pct + '%';
+    if(pct < 30) strengthLabel.textContent = 'Fraca';
+    else if(pct < 60) strengthLabel.textContent = 'Média';
+    else strengthLabel.textContent = 'Segura';
+  }
+
+  function updateChecklist(pwd){
+    el('chk-upper').textContent = /[A-Z]/.test(pwd) ? '✔' : '—';
+    el('chk-lower').textContent = /[a-z]/.test(pwd) ? '✔' : '—';
+    el('chk-numbers').textContent = /[0-9]/.test(pwd) ? '✔' : '—';
+    el('chk-symbols').textContent = /[^A-Za-z0-9]/.test(pwd) ? '✔' : '—';
+    el('chk-length').textContent = pwd.length >= Number(lengthEl.value) ? '✔' : '—';
+  }
+
+  function generatePassword(){
+    const length = Number(lengthEl.value);
+    const pool = buildPool();
+    if(!pool || pool.length === 0){ alert('Selecione ao menos um tipo de caractere.'); return ''; }
+
+    if(opts.force.checked){
+      const types = [];
+      if(opts.upper.checked) types.push({set: UPPER.replace(AMBIG, ''), enabled:true});
+      if(opts.lower.checked) types.push({set: LOWER.replace(AMBIG, ''), enabled:true});
+      if(opts.numbers.checked) types.push({set: NUMS.replace(AMBIG, ''), enabled:true});
+      if(opts.symbols.checked) types.push({set: SYMS.replace(AMBIG, ''), enabled:true});
+      const arr = new Array(Math.max(length, types.length)).fill('').map(()=>pickRandom(pool.replace(AMBIG, '')));
+      for(let i=0;i<types.length;i++) arr[i] = pickRandom(types[i].set);
+      const pwd = ensureIncludes(arr, types);
+      updateChecklist(pwd);
+      evaluateStrength(pwd);
+      return pwd.slice(0, length);
+    }
+
+    let pwd = '';
+    const poolSafe = opts.ambiguous.checked ? pool.replace(AMBIG, '') : pool;
+    for(let i=0;i<length;i++) pwd += pickRandom(poolSafe);
+    updateChecklist(pwd);
+    evaluateStrength(pwd);
+    return pwd;
+  }
+
+  generateBtn.addEventListener('click', ()=>{
+    const pwd = generatePassword();
+    if(pwd){ pwdEl.textContent = pwd; }
+  });
+
+  copyBtn.addEventListener('click', async ()=>{
+    try{
+      await navigator.clipboard.writeText(pwdEl.textContent);
+      copyBtn.textContent = 'Copiado!';
+      setTimeout(()=> copyBtn.textContent = 'Copiar', 1200);
+    }catch(e){
+      alert('Não foi possível copiar. Selecionar manualmente e copiar.');
+    }
+  });
+
+  (function(){ const p = generatePassword(); if(p) pwdEl.textContent = p; })();
+</script>
+</body>
+</html>
