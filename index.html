@@ -55,7 +55,7 @@
         <div style="margin-top:12px">
           <label for="length">Tamanho da senha (mínimo 4) <span id="lenVal">12</span></label>
           <div class="range" style="margin-top:6px">
-            <input id="length" type="range" min="4" max="64" value="12">
+            <input id="length" type="range" min="4" max="64" value="12" aria-valuemin="4" aria-valuemax="64" aria-valuenow="12" aria-label="Tamanho da senha">
             <button id="generate" class="btn">Gerar</button>
             <button id="copyBtn" class="ghost">Copiar</button>
           </div>
@@ -127,58 +127,71 @@
     force: el('opt-force')
   };
 
-  function updateLen(){ lenVal.textContent = lengthEl.value }
+  // Atualiza o número do tamanho da senha conforme slider
+  function updateLen() {
+    lenVal.textContent = lengthEl.value;
+  }
   lengthEl.addEventListener('input', updateLen);
   updateLen();
 
-  function buildPool(){
+  // Monta o conjunto de caracteres disponível
+  function buildPool() {
     let pool = '';
-    if(opts.upper.checked) pool += UPPER;
-    if(opts.lower.checked) pool += LOWER;
-    if(opts.numbers.checked) pool += NUMS;
-    if(opts.symbols.checked) pool += SYMS;
-    if(opts.ambiguous.checked) pool = pool.replace(AMBIG, '');
+    if (opts.upper.checked) pool += UPPER;
+    if (opts.lower.checked) pool += LOWER;
+    if (opts.numbers.checked) pool += NUMS;
+    if (opts.symbols.checked) pool += SYMS;
+    if (opts.ambiguous.checked) pool = pool.replace(AMBIG, '');
     return pool;
   }
 
-  function secureRandomInt(max){
+  // Gera número aleatório seguro
+  function secureRandomInt(max) {
     const arr = new Uint32Array(1);
     window.crypto.getRandomValues(arr);
     return arr[0] % max;
   }
 
-  function pickRandom(str){ return str.charAt(secureRandomInt(str.length)); }
+  // Pega caractere aleatório da string
+  function pickRandom(str) {
+    return str.charAt(secureRandomInt(str.length));
+  }
 
-  function ensureIncludes(passwordArray, types){
+  // Embaralha array e garante inclusão de todos os tipos marcados
+  function ensureIncludes(passwordArray, types) {
     let i = 0;
     types.forEach(t => {
-      if(t.enabled){
+      if (t.enabled) {
         passwordArray[i++] = pickRandom(t.set);
       }
     });
-    for(let j=passwordArray.length-1;j>0;j--){
-      const k = secureRandomInt(j+1);
+    // Embaralha array para não deixar padrão
+    for (let j = passwordArray.length - 1; j > 0; j--) {
+      const k = secureRandomInt(j + 1);
       [passwordArray[j], passwordArray[k]] = [passwordArray[k], passwordArray[j]];
     }
     return passwordArray.join('');
   }
 
-  function evaluateStrength(pwd){
+  // Avalia força da senha para barra e label
+  function evaluateStrength(pwd) {
     let score = 0;
-    if(/[A-Z]/.test(pwd)) score++;
-    if(/[a-z]/.test(pwd)) score++;
-    if(/[0-9]/.test(pwd)) score++;
-    if(/[^A-Za-z0-9]/.test(pwd)) score++;
-    if(pwd.length >= 12) score += 2;
-    else if(pwd.length >= 8) score += 1;
-    const max = 6; const pct = Math.min(100, Math.round((score / max)*100));
+    if (/[A-Z]/.test(pwd)) score++;
+    if (/[a-z]/.test(pwd)) score++;
+    if (/[0-9]/.test(pwd)) score++;
+    if (/[^A-Za-z0-9]/.test(pwd)) score++;
+    if (pwd.length >= 12) score += 2;
+    else if (pwd.length >= 8) score += 1;
+    const max = 6;
+    const pct = Math.min(100, Math.round((score / max) * 100));
     strengthBar.style.width = pct + '%';
-    if(pct < 30) strengthLabel.textContent = 'Fraca';
-    else if(pct < 60) strengthLabel.textContent = 'Média';
+    if (pct < 30) strengthLabel.textContent = 'Fraca';
+    else if (pct < 60) strengthLabel.textContent = 'Média';
     else strengthLabel.textContent = 'Segura';
   }
 
-  function updateChecklist(pwd){
+  // Atualiza checklist de caracteres usados
+  function updateChecklist(pwd) {
     el('chk-upper').textContent = /[A-Z]/.test(pwd) ? '✔' : '—';
     el('chk-lower').textContent = /[a-z]/.test(pwd) ? '✔' : '—';
     el('chk-numbers').textContent = /[0-9]/.test(pwd) ? '✔' : '—';
@@ -186,19 +199,31 @@
     el('chk-length').textContent = pwd.length >= Number(lengthEl.value) ? '✔' : '—';
   }
 
-  function generatePassword(){
+  // Gera a senha com base nas opções selecionadas
+  function generatePassword() {
     const length = Number(lengthEl.value);
-    const pool = buildPool();
-    if(!pool || pool.length === 0){ alert('Selecione ao menos um tipo de caractere.'); return ''; }
+    let pool = buildPool();
+    if (!pool || pool.length === 0) {
+      alert('Selecione ao menos um tipo de caractere.');
+      return '';
+    }
 
-    if(opts.force.checked){
+    // Remove caracteres ambíguos se opção marcada
+    if (opts.ambiguous.checked) {
+      pool = pool.replace(AMBIG, '');
+    }
+
+    if (opts.force.checked) {
       const types = [];
-      if(opts.upper.checked) types.push({set: UPPER.replace(AMBIG, ''), enabled:true});
-      if(opts.lower.checked) types.push({set: LOWER.replace(AMBIG, ''), enabled:true});
-      if(opts.numbers.checked) types.push({set: NUMS.replace(AMBIG, ''), enabled:true});
-      if(opts.symbols.checked) types.push({set: SYMS.replace(AMBIG, ''), enabled:true});
-      const arr = new Array(Math.max(length, types.length)).fill('').map(()=>pickRandom(pool.replace(AMBIG, '')));
-      for(let i=0;i<types.length;i++) arr[i] = pickRandom(types[i].set);
+      if (opts.upper.checked) types.push({ set: UPPER.replace(AMBIG, ''), enabled: true });
+      if (opts.lower.checked) types.push({ set: LOWER.replace(AMBIG, ''), enabled: true });
+      if (opts.numbers.checked) types.push({ set: NUMS.replace(AMBIG, ''), enabled: true });
+      if (opts.symbols.checked) types.push({ set: SYMS.replace(AMBIG, ''), enabled: true });
+
+      const arr = new Array(Math.max(length, types.length))
+        .fill('')
+        .map(() => pickRandom(pool));
+      for (let i = 0; i < types.length; i++) arr[i] = pickRandom(types[i].set);
       const pwd = ensureIncludes(arr, types);
       updateChecklist(pwd);
       evaluateStrength(pwd);
@@ -206,29 +231,42 @@
     }
 
     let pwd = '';
-    const poolSafe = opts.ambiguous.checked ? pool.replace(AMBIG, '') : pool;
-    for(let i=0;i<length;i++) pwd += pickRandom(poolSafe);
+    for (let i = 0; i < length; i++) {
+      pwd += pickRandom(pool);
+    }
     updateChecklist(pwd);
     evaluateStrength(pwd);
     return pwd;
   }
 
-  generateBtn.addEventListener('click', ()=>{
+  // Evento para botão Gerar senha
+  generateBtn.addEventListener('click', () => {
     const pwd = generatePassword();
-    if(pwd){ pwdEl.textContent = pwd; }
+    if (pwd) {
+      pwdEl.textContent = pwd;
+    }
   });
 
-  copyBtn.addEventListener('click', async ()=>{
-    try{
+  // Evento para botão Copiar senha
+  copyBtn.addEventListener('click', async () => {
+    try {
       await navigator.clipboard.writeText(pwdEl.textContent);
       copyBtn.textContent = 'Copiado!';
-      setTimeout(()=> copyBtn.textContent = 'Copiar', 1200);
-    }catch(e){
+      setTimeout(() => (copyBtn.textContent = 'Copiar'), 1200);
+    } catch (e) {
       alert('Não foi possível copiar. Selecionar manualmente e copiar.');
     }
   });
 
-  (function(){ const p = generatePassword(); if(p) pwdEl.textContent = p; })();
+  // Gera senha inicial ao carregar a página
+  (function () {
+    const p = generatePassword();
+    if (p) pwdEl.textContent = p;
+  })();
+</script>
+</body>
+</html>
+(){ const p = generatePassword(); if(p) pwdEl.textContent = p; })();
 </script>
 </body>
 </html>
